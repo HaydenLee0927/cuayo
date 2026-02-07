@@ -182,7 +182,9 @@ def search_user(user_id, timeframe, ref_time):
     # One line per each category
     output = {}
     for category, total in category_totals.items():
-        output[category] = round(total, 2)
+        _, user_rank, num_users, _, _ = search_df(user_id, category, timeframe, ref_time)
+        # Calculate percentile rank of user is user_rank is not None, else 0
+        output[category] = (round(total, 2), round(user_rank/num_users if user_rank else 0, 4))
     output['total'] = round(total_spent, 2)
     output['budget'] = round(budget,2)
     return output
