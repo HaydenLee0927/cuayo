@@ -60,7 +60,7 @@ def search_df(user_id, category, time, ref_time, state=None):
 
     # Make a new column spent_ratio = amt / (salary/12) if m, salary/52 if w, salary/365 if d
     salary_ratio = 12 if time == 'm' else 52 if time == 'w' else 365
-    amt_spent_user = amt_spent_user.merge(df[['user_id', 'salary']].drop_duplicates(), on='user_id', how='left')
+    amt_spent_user = amt_spent_user.merge(df[['user_id', 'salary', 'name']].drop_duplicates(), on='user_id', how='left')
     # Round to 4 digits after decimal
     amt_spent_user['spent_ratio'] = (amt_spent_user['amt'] / (amt_spent_user['salary'] / salary_ratio)).round(4)
 
@@ -69,60 +69,61 @@ def search_df(user_id, category, time, ref_time, state=None):
     ranked_df = amt_spent_user.sort_values(by='rank')
     #print(ranked_df[ranked_df['user_id'] == user_id])
 
-    # Return the spent_ratio of user_id, rank of user_id, number of user_ids with nonzero values and the list of user_ids of top 3 ranked users and the user of rank right before me and after me, and the list of spent_ratio of those users
-    # If user_id is in top 3, for the last 2 outputs return the user_ids and spent_ratios of users in the union of top 3 and the rank before and after user_id
+    # Return the spent_ratio of user_id, rank of user_id, number of user_ids with nonzero values and the list of names of top 3 ranked users and the user of rank right before me and after me, and the list of spent_ratio of those users
     if user_id in ranked_df['user_id'].values:
         user_row = ranked_df[ranked_df['user_id'] == user_id].iloc[0]
         user_spent_ratio = user_row['spent_ratio']
         user_rank = int(user_row['rank'])
+        user_name = user_row['name'] if 'name' in user_row.index else None
         if user_rank <= 3:
-            # User is in top 3, return only first 3 rows but replace with user's data if tied
+            # User is in top 3, return only first 3 rows but ensure user's name appears (replace if tied)
             top_3_df = ranked_df[ranked_df['rank'] <= 3].head(3).copy()
-            # Replace the row with matching rank with user's data
             top_3_df = top_3_df[top_3_df['user_id'] != user_id]
             top_3_df = pd.concat([top_3_df, user_row.to_frame().T], ignore_index=True)
             top_3_df = top_3_df.sort_values(by='rank').head(3)
-            top_users = top_3_df['user_id'].tolist()
+            top_users = top_3_df['name'].tolist()
             top_spent_ratios = top_3_df['spent_ratio'].tolist()
             return user_spent_ratio, user_rank, len(ranked_df[ranked_df['spent_ratio'] > 0]), top_users, top_spent_ratios
         else:
-            # User rank is greater than 3, so return top 3 and one rank before and after user_id
+            # User rank is greater than 3, so return top 3 names and one name before and after user
             top_3_df = ranked_df[ranked_df['rank'] <= 3].head(3).copy()
-            top_users = top_3_df['user_id'].tolist()
+            top_users = top_3_df['name'].tolist()
             top_spent_ratios = top_3_df['spent_ratio'].tolist()
-            
+
             # Get one user with rank < user_rank (right before)
             before_user_df = ranked_df[ranked_df['rank'] < user_rank].tail(1)
             # Get one user with rank > user_rank (right after)
             after_user_df = ranked_df[ranked_df['rank'] > user_rank].head(1)
-            
+
             final_users = top_users.copy()
             final_spent_ratios = top_spent_ratios.copy()
-            
+
             # Add before user if exists and not already in top 3
             if not before_user_df.empty:
-                before_user_id = before_user_df.iloc[0]['user_id']
-                if before_user_id not in final_users:
-                    final_users.append(before_user_id)
-                    final_spent_ratios.append(before_user_df.iloc[0]['spent_ratio'])
-            
-            # Add user's row
-            if user_id not in final_users:
-                final_users.append(user_id)
+                before_name = before_user_df.iloc[0]['name']
+                before_spent = before_user_df.iloc[0]['spent_ratio']
+                if before_name not in final_users:
+                    final_users.append(before_name)
+                    final_spent_ratios.append(before_spent)
+
+            # Add user's name
+            if user_name not in final_users:
+                final_users.append(user_name)
                 final_spent_ratios.append(user_spent_ratio)
-            
+
             # Add after user if exists and not already in top 3
             if not after_user_df.empty:
-                after_user_id = after_user_df.iloc[0]['user_id']
-                if after_user_id not in final_users:
-                    final_users.append(after_user_id)
-                    final_spent_ratios.append(after_user_df.iloc[0]['spent_ratio'])
-            
+                after_name = after_user_df.iloc[0]['name']
+                after_spent = after_user_df.iloc[0]['spent_ratio']
+                if after_name not in final_users:
+                    final_users.append(after_name)
+                    final_spent_ratios.append(after_spent)
+
             return user_spent_ratio, user_rank, len(ranked_df[ranked_df['spent_ratio'] > 0]), final_users, final_spent_ratios
     else:
-        # Return 0, None, top 3 user data
+        # Return 0, None, top 3 user names
         top_3_df = ranked_df[ranked_df['rank'] <= 3].head(3)
-        top_users = top_3_df['user_id'].tolist()
+        top_users = top_3_df['name'].tolist()
         top_spent_ratios = top_3_df['spent_ratio'].tolist()
         return 0, None, len(ranked_df[ranked_df['spent_ratio'] > 0]), top_users, top_spent_ratios
 
@@ -182,9 +183,10 @@ def search_user(user_id, timeframe, ref_time):
     # One line per each category
     output = {}
     for category, total in category_totals.items():
-        _, user_rank, num_users, _, _ = search_df(user_id, category, timeframe, ref_time)
+        """_, user_rank, num_users, _, _ = search_df(user_id, category, timeframe, ref_time)
         # Calculate percentile rank of user is user_rank is not None, else 0
-        output[category] = (round(total, 2), round(user_rank/num_users if user_rank else 0, 4))
+        output[category] = (round(total, 2), round(user_rank/num_users if user_rank else 0, 4)"""
+        output[category] = round(total, 2)
     output['total'] = round(total_spent, 2)
     output['budget'] = round(budget,2)
     return output
