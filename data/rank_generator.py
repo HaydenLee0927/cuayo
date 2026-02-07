@@ -199,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument("--state", type=str, default=None)
     args = parser.parse_args()
 
-    # 🔒 고정 reference time
+    #fixed reference time
     ref_dt = datetime.datetime(2019, 2, 15)
     user_spent_ratio, user_rank, num_users, top_users, top_spent_ratios = search_df(
         args.user_id,
