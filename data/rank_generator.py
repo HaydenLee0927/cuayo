@@ -55,7 +55,7 @@ def search_df(user_id, category, time, ref_time, state=None):
     #print(amt_spent_user.head())
     # If there is no data for all users
     if amt_spent_user.empty:
-        return 0, None, [], []
+        return 0, None, None, [], []
     #print(df.head())
 
     # Make a new column spent_ratio = amt / (salary/12) if m, salary/52 if w, salary/365 if d
@@ -251,8 +251,6 @@ if __name__ == "__main__":
         ref_dt,
         state=args.state,
     )
-
-    print(user_best_worst(args.user_id, args.time, ref_dt))
 
     top_percent = None
     if user_rank is not None and num_users > 0:
