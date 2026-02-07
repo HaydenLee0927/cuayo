@@ -4,7 +4,6 @@ import datetime
 import os
 
 
-
 def search_df(user_id, category, time, ref_time, state=None):
     """
     :param user_id: user_id of the user we want to find the rank and spent ratio for
@@ -173,7 +172,7 @@ def search_user(user_id, timeframe, ref_time):
         df = df[df['unix_time'] >= ref_time.timestamp() - 604800]
     elif timeframe == 'm':
         df = df[df['unix_time'] >= ref_time.timestamp() - 2592000]
-    print(df)
+    #print(df)
     # Group by category and sum the amounts
     category_totals = df.groupby('category')['amt'].sum()
     # Get total amount spent
@@ -189,5 +188,41 @@ def search_user(user_id, timeframe, ref_time):
     return output
 
 if __name__ == "__main__":
-    print(search_df('EuLe21', 'home', 'm', datetime.datetime(2019, 2, 15), state='PA'))
-    print(search_user('JaSt22', 'w', datetime.datetime(2019, 2, 15)))
+    import argparse
+    import json
+    import sys
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--user_id", type=str, required=True)
+    parser.add_argument("--category", type=str, required=True)
+    parser.add_argument("--time", type=str, required=True)  # d / w / m
+    parser.add_argument("--state", type=str, default=None)
+    args = parser.parse_args()
+
+    # 🔒 고정 reference time
+    ref_dt = datetime.datetime(2019, 2, 15)
+    user_spent_ratio, user_rank, num_users, top_users, top_spent_ratios = search_df(
+        args.user_id,
+        args.category,
+        args.time,
+        ref_dt,
+        state=args.state,
+    )
+
+    top_percent = None
+    if user_rank is not None and num_users > 0:
+        top_percent = (user_rank / num_users) * 100
+
+    payload = {
+        "userSpentRatio": float(user_spent_ratio),
+        "userRank": user_rank,
+        "numUsers": int(num_users),
+        "topUsers": list(top_users),
+        "topSpentRatios": [float(x) for x in top_spent_ratios],
+        "topPercent": None if top_percent is None else float(top_percent),
+        "refTime": ref_dt.isoformat(),
+    }
+
+    print(json.dumps(payload))
+    sys.stdout.flush()
+

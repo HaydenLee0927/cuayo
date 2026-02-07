@@ -115,7 +115,7 @@ export async function GET(req: Request) {
       userSpentRatio: py.userSpentRatio,
       userRank: py.userRank,
       numUsers: py.numUsers,
-      topPercent: py.topPercent,
+      topPercent: py.topPercent, 
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

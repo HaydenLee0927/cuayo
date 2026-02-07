@@ -34,7 +34,7 @@ export default function Navbar() {
 
         <nav className="mx-auto flex items-center gap-12">
           <NavTab href="/rankings" label="Rankings" />
-          <NavTab href="/advices" label="Advices" />
+          <NavTab href="/analytics" label="Analytics" />
           <NavTab href="/history" label="History" />
         </nav>
 
@@ -43,13 +43,7 @@ export default function Navbar() {
           className="flex items-center gap-4 rounded-full bg-white/15 px-5 py-2 hover:bg-white/25 transition"
         >
           <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white/20 text-lg">
-            {user.anonymousMode ? (
-              <img
-                src="/logo/cuayo-logo.png"
-                alt="Anonymous"
-                className="h-full w-full object-cover"
-              />
-            ) : user.profileImage ? (
+            {user.profileImage ? (
               <img
                 src={user.profileImage}
                 alt="Profile"
@@ -60,9 +54,16 @@ export default function Navbar() {
             )}
           </div>
 
-          <span className="hidden sm:block text-lg font-semibold text-white">
-            {user.anonymousMode ? "Anonymous" : user.nickname}
-          </span>
+          <div className="hidden sm:flex flex-col leading-tight">
+            <span className="text-lg font-semibold text-white">
+              {user.nickname}
+            </span>
+
+            {/* 선택: 익명 모드임을 UI에 ‘표시만’ 하고 싶다면 유지 */}
+            {user.anonymousMode && (
+              <span className="text-xs text-white/70">Anonymous mode</span>
+            )}
+          </div>
         </Link>
       </div>
     </header>
