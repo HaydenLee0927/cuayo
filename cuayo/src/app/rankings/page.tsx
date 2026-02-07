@@ -289,18 +289,18 @@ export default function RankingsPage() {
   return (
     <div className="w-full max-w-[1200px] mx-auto">
       <div className="mb-6 flex items-baseline justify-between">
-        <h1 className="text-xl font-black text-neutral-900">Rankings</h1>
+        <h1 className="text-[28px] font-black text-neutral-900">Rankings</h1>
       </div>
 
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-3 rounded-2xl border border-neutral-200 bg-white p-4">
-          <div className="text-sm font-bold text-neutral-900">Filters</div>
+          <div className="text-[13px] font-bold text-neutral-900">Filters</div>
 
           <div className="mt-4 space-y-3">
             <div>
               <div className="mb-1 text-xs font-semibold text-neutral-500">Time</div>
               <select
-                className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[13px]"
                 value={time}
                 onChange={(e) => setTime(e.target.value as TimeOpt)}
               >
@@ -313,7 +313,7 @@ export default function RankingsPage() {
             <div>
               <div className="mb-1 text-xs font-semibold text-neutral-500">Category</div>
               <select
-                className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[13px]"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as CategoryOpt)}
               >
@@ -334,7 +334,7 @@ export default function RankingsPage() {
             <div>
               <div className="mb-1 text-xs font-semibold text-neutral-500">Group</div>
               <select
-                className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[13px]"
                 value={group}
                 onChange={(e) => setGroup(e.target.value as GroupOpt)}
               >
@@ -350,7 +350,7 @@ export default function RankingsPage() {
               <div>
                 <div className="mb-1 text-xs font-semibold text-neutral-500">State code</div>
                 <input
-                  className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[13px]"
                   value={groupValue}
                   onChange={(e) => setGroupValue(e.target.value)}
                   placeholder="PA"
@@ -362,25 +362,25 @@ export default function RankingsPage() {
 
         <div className="col-span-12 md:col-span-5 rounded-2xl border border-neutral-200 bg-white p-4">
           <div className="flex items-center justify-between">
-            <div className="text-sm font-bold text-neutral-900">Distribution</div>
+            <div className="text-[13px] font-bold text-neutral-900">Distribution</div>
           </div>
 
           <div className="mt-3 rounded-2xl border border-neutral-200 bg-white p-2">
             {loading ? (
-              <div className="p-4 text-sm text-neutral-600">Loading…</div>
+              <div className="p-4 text-[13px] text-neutral-600">Loading…</div>
             ) : error ? (
-              <div className="p-4 text-sm font-semibold text-red-600">{error}</div>
+              <div className="p-4 text-[13px] font-semibold text-red-600">{error}</div>
             ) : model ? (
               <StandardBellCurveSvg topPercent={model.topPercent} />
             ) : (
-              <div className="p-4 text-sm text-neutral-600">No data</div>
+              <div className="p-4 text-[13px] text-neutral-600">No data</div>
             )}
           </div>
 
           <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4">
             <div className="text-xs font-semibold text-neutral-600">Your standing</div>
             <div className="mt-1 flex items-baseline gap-2">
-              <div className="text-2xl font-black text-neutral-900">{topLabel}</div>
+              <div className="text-[22px] font-black text-neutral-900">{topLabel}</div>
               <div className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-bold text-neutral-700">
                 #{model?.userRank ?? "—"} / {model?.numUsers ?? "—"}
               </div>
@@ -392,21 +392,21 @@ export default function RankingsPage() {
         </div>
 
         <div className="col-span-12 md:col-span-4 rounded-2xl border border-neutral-200 bg-white p-4">
-          <div className="text-sm font-bold text-neutral-900">Leaderboard</div>
+          <div className="text-[13px] font-bold text-neutral-900">Leaderboard</div>
 
           <div className="mt-3 max-h-[26rem] overflow-auto rounded-xl border border-neutral-200">
             {loading ? (
-              <div className="p-4 text-sm text-neutral-600">Loading…</div>
+              <div className="p-4 text-[13px] text-neutral-600">Loading…</div>
             ) : error ? (
-              <div className="p-4 text-sm font-semibold text-red-600">{error}</div>
+              <div className="p-4 text-[13px] font-semibold text-red-600">{error}</div>
             ) : !model ? (
-              <div className="p-4 text-sm text-neutral-600">No data</div>
+              <div className="p-4 text-[13px] text-neutral-600">No data</div>
             ) : model.rows.length === 0 ? (
-              <div className="p-4 text-sm text-neutral-600">
+              <div className="p-4 text-[13px] text-neutral-600">
                 No transactions in this category/timeframe.
               </div>
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full text-[13px]">
                 <thead className="sticky top-0 bg-white">
                   <tr className="text-left text-xs text-neutral-500">
                     <th className="px-3 py-2">Rank</th>
