@@ -174,10 +174,8 @@ export default function RankingsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ 핵심: 복원 완료 전에는 저장하지 않기 위한 플래그
   const [filtersReady, setFiltersReady] = useState(false);
 
-  // ✅ 1) 마운트 시 localStorage에서 필터 복원
   useEffect(() => {
     try {
       const raw = localStorage.getItem("cuayo_rank_filters_v1");
@@ -197,15 +195,12 @@ export default function RankingsPage() {
     } catch {
       // ignore
     } finally {
-      // ✅ 복원 시도 끝났으면 저장 허용
       setFiltersReady(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ 2) 필터 변경 시 localStorage에 저장 (복원 완료 후에만)
   useEffect(() => {
-    if (!filtersReady) return; // ✅ 이게 없으면 기본값이 저장되어 덮어씀
+    if (!filtersReady) return;
     try {
       localStorage.setItem(
         "cuayo_rank_filters_v1",
@@ -285,10 +280,10 @@ export default function RankingsPage() {
   }, [model, userId]);
 
   return (
-    <div className="w-full max-w-6xl rounded-3xl border-2 border-[var(--visa-navy)] bg-white p-8">
-      <div className="mb-6 flex items-baseline justify-between">
-        <h1 className="text-xl font-black text-neutral-900">Rankings</h1>
-      </div>
+    <div className="w-full max-w-[1200px] mx-auto">
+    <div className="mb-6 flex items-baseline justify-between">
+      <h1 className="text-xl font-black text-neutral-900">Rankings</h1>
+    </div>
 
       <div className="grid grid-cols-12 gap-6">
         {/* Filters */}

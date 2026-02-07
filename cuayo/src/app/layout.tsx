@@ -15,7 +15,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      {/* ❌ 배경을 네이비로 꽉 채우지 않음 */}
       <body suppressHydrationWarning
       className="min-h-screen text-neutral-900 bg-neutral-100">
         <UserProvider>
@@ -33,7 +32,6 @@ export default function RootLayout({
               "
             />
 
-            {/* ✅ 아주 약한 하이라이트 (패턴 ❌) */}
             <div
               className="
                 pointer-events-none

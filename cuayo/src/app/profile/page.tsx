@@ -67,7 +67,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="w-full max-w-4xl rounded-3xl border-2 border-[var(--visa-navy)] bg-white p-10">
+    <div className="w-full max-w-[1200px] mx-auto">
+      <div className="rounded-3xl bg-white/90 backdrop-blur p-10 shadow-sm">
       {/* Header */}
       <div className="flex flex-col items-center">
         <button
@@ -175,6 +176,7 @@ export default function ProfilePage() {
         )}
       </div>
     </div>
+  </div>
   );
 }
 

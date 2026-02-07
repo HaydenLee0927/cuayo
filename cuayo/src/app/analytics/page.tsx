@@ -345,12 +345,13 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", padding: 24, background: "#d9def0" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>Analytics</h1>
-        <div style={{ opacity: 0.75, marginBottom: 18 }}>
-          Spending breakdown and budget status for the selected timeframe.
-        </div>
+    <div className="w-full max-w-[1200px] mx-auto">
+  <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>
+    Analytics
+  </h1>
+  <div style={{ opacity: 0.75, marginBottom: 18 }}>
+    Spending breakdown and budget status for the selected timeframe.
+  </div>
 
         {/* Controls: time only, no Refresh */}
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end", marginBottom: 18 }}>
@@ -608,6 +609,5 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
-    </div>
   );
 }

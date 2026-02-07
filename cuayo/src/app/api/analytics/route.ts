@@ -78,32 +78,20 @@ export async function GET(req: Request) {
     );
   }
 
-  // IMPORTANT: This is the #1 suspect. Your Next app may be using a different rank_generator.py
-  // than the one you tested locally. Keep it aligned with your ranking route.
   const pyPath = path.join(process.cwd(), "..", "data", "rank_generator.py");
   const csvPath = path.join(path.dirname(pyPath), "credit_card_transaction.csv");
 
-  const debug = {
-    received: { userId, timeParam, time, refTime },
-    resolvedPaths: {
-      pyPath,
-      pyExists: fs.existsSync(pyPath),
-      csvPath,
-      csvExists: fs.existsSync(csvPath),
-      cwd: process.cwd(),
-    },
-  };
-
   try {
-    if (!debug.resolvedPaths.pyExists) {
+    if (!fs.existsSync(pyPath)) {
       return NextResponse.json(
-        { ok: false, error: `rank_generator.py not found at ${pyPath}`, debug },
+        { ok: false, error: `rank_generator.py not found at ${pyPath}` },
         { status: 500 }
       );
     }
-    if (!debug.resolvedPaths.csvExists) {
+
+    if (!fs.existsSync(csvPath)) {
       return NextResponse.json(
-        { ok: false, error: `credit_card_transaction.csv not found at ${csvPath}`, debug },
+        { ok: false, error: `credit_card_transaction.csv not found at ${csvPath}` },
         { status: 500 }
       );
     }
@@ -135,11 +123,10 @@ export async function GET(req: Request) {
       budget,
       budgetDelta,
       raw: py.raw,
-      debug,
     });
   } catch (e: any) {
     return NextResponse.json(
-      { ok: false, error: e.message, debug },
+      { ok: false, error: e.message },
       { status: 500 }
     );
   }

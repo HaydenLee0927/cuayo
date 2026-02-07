@@ -59,7 +59,6 @@ export default function Navbar() {
               {user.nickname}
             </span>
 
-            {/* 선택: 익명 모드임을 UI에 ‘표시만’ 하고 싶다면 유지 */}
             {user.anonymousMode && (
               <span className="text-xs text-white/70">Anonymous mode</span>
             )}
