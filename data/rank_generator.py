@@ -66,10 +66,9 @@ def search_df(user_id, category, time, ref_time, state=None):
     amt_spent_user['spent_ratio'] = (amt_spent_user['amt'] / (amt_spent_user['salary'] / salary_ratio)).round(4)
 
     # Rank by spent_ratio
-    amt_spent_user['rank'] = amt_spent_user['spent_ratio'].rank(ascending=False, method='min')
+    amt_spent_user['rank'] = amt_spent_user['spent_ratio'].rank(ascending=True, method='min')
     ranked_df = amt_spent_user.sort_values(by='rank')
     #print(ranked_df[ranked_df['user_id'] == user_id])
-    #print(ranked_df.head(10))
 
     # Return the spent_ratio of user_id, rank of user_id, number of user_ids with nonzero values and the list of user_ids of top 3 ranked users and the user of rank right before me and after me, and the list of spent_ratio of those users
     # If user_id is in top 3, for the last 2 outputs return the user_ids and spent_ratios of users in the union of top 3 and the rank before and after user_id
@@ -77,26 +76,55 @@ def search_df(user_id, category, time, ref_time, state=None):
         user_row = ranked_df[ranked_df['user_id'] == user_id].iloc[0]
         user_spent_ratio = user_row['spent_ratio']
         user_rank = int(user_row['rank'])
-        if user_rank <= 5:
-            top_users = ranked_df[ranked_df['rank'] <= max(user_rank+1,3)]['user_id'].tolist()
-            top_spent_ratios = ranked_df[ranked_df['rank'] <= max(user_rank+1,3)]['spent_ratio'].tolist()
+        if user_rank <= 3:
+            # User is in top 3, return only first 3 rows but replace with user's data if tied
+            top_3_df = ranked_df[ranked_df['rank'] <= 3].head(3).copy()
+            # Replace the row with matching rank with user's data
+            top_3_df = top_3_df[top_3_df['user_id'] != user_id]
+            top_3_df = pd.concat([top_3_df, user_row.to_frame().T], ignore_index=True)
+            top_3_df = top_3_df.sort_values(by='rank').head(3)
+            top_users = top_3_df['user_id'].tolist()
+            top_spent_ratios = top_3_df['spent_ratio'].tolist()
             return user_spent_ratio, user_rank, len(ranked_df[ranked_df['spent_ratio'] > 0]), top_users, top_spent_ratios
         else:
-            # User rank is greater than 5, so we can return the top 3 and the rank before and after user_id
-            # Last two outputs include users in top 3 and surrounding ranks of user_id
-            surrounding_users = ranked_df[(ranked_df['rank'] >= user_rank - 1) & (ranked_df['rank'] <= user_rank + 1)]['user_id'].tolist()
-            top_users = ranked_df[ranked_df['rank'] <= 3]['user_id'].tolist()
-            top_spent_ratios = ranked_df[ranked_df['rank'] <= 3]['spent_ratio'].tolist()
-            # Combine top_users and surrounding users
-            final_users = top_users + surrounding_users
-            final_spent_ratios = []
-            for u in final_users:
-                final_spent_ratios.append(ranked_df[ranked_df['user_id'] == u]['spent_ratio'].values[0])
+            # User rank is greater than 3, so return top 3 and one rank before and after user_id
+            top_3_df = ranked_df[ranked_df['rank'] <= 3].head(3).copy()
+            top_users = top_3_df['user_id'].tolist()
+            top_spent_ratios = top_3_df['spent_ratio'].tolist()
+            
+            # Get one user with rank < user_rank (right before)
+            before_user_df = ranked_df[ranked_df['rank'] < user_rank].tail(1)
+            # Get one user with rank > user_rank (right after)
+            after_user_df = ranked_df[ranked_df['rank'] > user_rank].head(1)
+            
+            final_users = top_users.copy()
+            final_spent_ratios = top_spent_ratios.copy()
+            
+            # Add before user if exists and not already in top 3
+            if not before_user_df.empty:
+                before_user_id = before_user_df.iloc[0]['user_id']
+                if before_user_id not in final_users:
+                    final_users.append(before_user_id)
+                    final_spent_ratios.append(before_user_df.iloc[0]['spent_ratio'])
+            
+            # Add user's row
+            if user_id not in final_users:
+                final_users.append(user_id)
+                final_spent_ratios.append(user_spent_ratio)
+            
+            # Add after user if exists and not already in top 3
+            if not after_user_df.empty:
+                after_user_id = after_user_df.iloc[0]['user_id']
+                if after_user_id not in final_users:
+                    final_users.append(after_user_id)
+                    final_spent_ratios.append(after_user_df.iloc[0]['spent_ratio'])
+            
             return user_spent_ratio, user_rank, len(ranked_df[ranked_df['spent_ratio'] > 0]), final_users, final_spent_ratios
     else:
         # Return 0, None, top 3 user data
-        top_users = ranked_df[ranked_df['rank'] <= 3]['user_id'].tolist()
-        top_spent_ratios = ranked_df[ranked_df['rank'] <= 3]['spent_ratio'].tolist()
+        top_3_df = ranked_df[ranked_df['rank'] <= 3].head(3)
+        top_users = top_3_df['user_id'].tolist()
+        top_spent_ratios = top_3_df['spent_ratio'].tolist()
         return 0, None, len(ranked_df[ranked_df['spent_ratio'] > 0]), top_users, top_spent_ratios
 
 def update_df(user_id, category, time, amt, state):
@@ -121,6 +149,45 @@ def update_df(user_id, category, time, amt, state):
     # Write the updated df to csv
     df.to_csv(os.path.join(os.path.dirname(__file__), "credit_card_transaction.csv"), index=False)
 
+def search_user(user_id, timeframe, ref_time):
+    """
+    Docstring for search_user
+    
+    :param user_id: user_id of the user we want to search for
+    :param timeframe: time window to consider, either daily (d), weekly (w), or monthly (m)
+    :return: a json style output of the user's transactions in the given time window, with the 
+    total amount spent in each category and the total amount spent overall
+    """
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), "credit_card_transaction.csv"))
+    # Check if user_id is in df
+    if user_id not in df['user_id'].values:
+        raise ValueError("user_id not found in dataset. Please check the user_id and try again.")
+    # Filter by user_id and timeframe
+    df = df[df['user_id'] == user_id]
+    df = df[df['unix_time'] <= ref_time.timestamp()]
+    if timeframe == 'd':
+        df = df[df['unix_time'] >= ref_time.timestamp() - 86400]
+    elif timeframe == 'w':
+        df = df[df['unix_time'] >= ref_time.timestamp() - 604800]
+    elif timeframe == 'm':
+        df = df[df['unix_time'] >= ref_time.timestamp() - 2592000]
+    print(df)
+    # Group by category and sum the amounts
+    category_totals = df.groupby('category')['amt'].sum()
+    # Get total amount spent
+    total_spent = df['amt'].sum()
+    # User salary
+    salary = df['salary'].values[0]
+    budget = salary / 12 if timeframe == 'm' else salary / 52 if timeframe == 'w' else salary / 365
+    # Return json style output
+    # One line per each category
+    output = {}
+    for category, total in category_totals.items():
+        output[category] = round(total, 2)
+    output['total'] = round(total_spent, 2)
+    output['budget'] = round(budget,2)
+    return output
 
 if __name__ == "__main__":
-    print(search_df('EuLe21', 'gas_transport', 'm', datetime.datetime(2019, 2, 15), state='PA'))
+    print(search_df('EuLe21', 'home', 'm', datetime.datetime(2019, 2, 15), state='PA'))
+    print(search_user('EuLe21', 'm', datetime.datetime(2019, 2, 15)))
