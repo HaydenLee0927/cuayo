@@ -18,6 +18,7 @@ def search_df(user_id, category, time, ref_time, state=None):
     :return:
     user_spent_ratio: the spent ratio of the user_id in the given category, time window and state
     user_rank: the rank of the user_id in the given category, time window and state
+    num_users: the number of user_ids with nonzero spent_ratio in the given category, time window and state
     top_users: the list of user_ids of top 3 ranked users and the user of rank 
                right before me and after me, and the list of spent_ratio of those users
     top_spent_ratios: the list of spent_ratio of top 3 ranked users and the user of rank
@@ -29,6 +30,9 @@ def search_df(user_id, category, time, ref_time, state=None):
             if there are no transactions in category at all over time frame
     """
     df = pd.read_csv(os.path.join(os.path.dirname(__file__), "credit_card_transaction.csv"))
+    # Check if user_id is in df
+    if user_id not in df['user_id'].values:
+        raise ValueError("user_id not found in dataset. Please check the user_id and try again.")
     #print(df.head())
     # Category: filter by category
     df = df[df['category'] == category]
@@ -67,16 +71,16 @@ def search_df(user_id, category, time, ref_time, state=None):
     #print(ranked_df[ranked_df['user_id'] == user_id])
     #print(ranked_df.head(10))
 
-    # Return the spent_ratio of user_id, rank of user_id and the list of user_ids of top 3 ranked users and the user of rank right before me and after me, and the list of spent_ratio of those users
+    # Return the spent_ratio of user_id, rank of user_id, number of user_ids with nonzero values and the list of user_ids of top 3 ranked users and the user of rank right before me and after me, and the list of spent_ratio of those users
     # If user_id is in top 3, for the last 2 outputs return the user_ids and spent_ratios of users in the union of top 3 and the rank before and after user_id
     if user_id in ranked_df['user_id'].values:
         user_row = ranked_df[ranked_df['user_id'] == user_id].iloc[0]
         user_spent_ratio = user_row['spent_ratio']
         user_rank = int(user_row['rank'])
         if user_rank <= 5:
-            top_users = ranked_df[ranked_df['rank'] <= max(user_rank,3)]['user_id'].tolist()
-            top_spent_ratios = ranked_df[ranked_df['rank'] <= max(user_rank,3)]['spent_ratio'].tolist()
-            return user_spent_ratio, user_rank, top_users, top_spent_ratios
+            top_users = ranked_df[ranked_df['rank'] <= max(user_rank+1,3)]['user_id'].tolist()
+            top_spent_ratios = ranked_df[ranked_df['rank'] <= max(user_rank+1,3)]['spent_ratio'].tolist()
+            return user_spent_ratio, user_rank, len(ranked_df[ranked_df['spent_ratio'] > 0]), top_users, top_spent_ratios
         else:
             # User rank is greater than 5, so we can return the top 3 and the rank before and after user_id
             # Last two outputs include users in top 3 and surrounding ranks of user_id
@@ -88,14 +92,35 @@ def search_df(user_id, category, time, ref_time, state=None):
             final_spent_ratios = []
             for u in final_users:
                 final_spent_ratios.append(ranked_df[ranked_df['user_id'] == u]['spent_ratio'].values[0])
-            return user_spent_ratio, user_rank, final_users, final_spent_ratios
+            return user_spent_ratio, user_rank, len(ranked_df[ranked_df['spent_ratio'] > 0]), final_users, final_spent_ratios
     else:
         # Return 0, None, top 3 user data
         top_users = ranked_df[ranked_df['rank'] <= 3]['user_id'].tolist()
         top_spent_ratios = ranked_df[ranked_df['rank'] <= 3]['spent_ratio'].tolist()
-        return 0, None, top_users, top_spent_ratios
+        return 0, None, len(ranked_df[ranked_df['spent_ratio'] > 0]), top_users, top_spent_ratios
+
+def update_df(user_id, category, time, amt, state):
+    """
+    Docstring for update_df
     
+    :param user_id: user_id of the user who made the transaction
+    :param category: category of the transaction
+    :param time: time the transaction was made in datetime format
+    :param amt: amount of the transaction
+    :param state: state where the transaction was made
+    """ 
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), "credit_card_transaction.csv"))
+    # Get salary of user_id
+    if user_id in df['user_id'].values:
+        salary = df[df['user_id'] == user_id]['salary'].values[0]
+    else:
+        raise ValueError("user_id not found in dataset. Please check the user_id and try again.")
+    # Create a new row with the transaction data and append to df
+    new_row = {'user_id': user_id, 'category': category, 'unix_time': int(time.timestamp()), 'amt': amt, 'state': state, 'salary': salary}
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    # Write the updated df to csv
+    df.to_csv(os.path.join(os.path.dirname(__file__), "credit_card_transaction.csv"), index=False)
 
 
 if __name__ == "__main__":
-    print(search_df('TaCa35', 'misc', 'm', datetime.datetime(2019, 1, 15)))
+    print(search_df('EuLe21', 'gas_transport', 'm', datetime.datetime(2019, 2, 15), state='PA'))

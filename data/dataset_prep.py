@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import datetime
+import os
 
 START_OF_2019 = 1325376018 # UNIX TIME FOR JAN 1 2019 in dataset
 TIME_ADJUST_FACTOR = int(datetime.datetime(2019, 1, 1).timestamp()) - START_OF_2019
@@ -41,7 +42,7 @@ def clean_dataset():
     salary_map = {}
     for name in df['user_id'].unique():
         salary = np.random.normal(100000, 50000)
-        salary = np.clip(salary, 35000, 300000)
+        salary = np.clip(salary, 40000, 300000)
         salary = (salary / 1000).round() * 1000
         salary_map[name] = salary
     
@@ -56,14 +57,38 @@ def clean_dataset():
 
     df = df.dropna()
 
-    # Write the cleaned dataset to a new CSV file
-    df.to_csv("credit_card_transaction.csv", index=False)
-
     # Print column names of df
     print(df.columns)
 
     return df
 
-if __name__ == "__main__":
+def create_eugene_dataset():
     df = clean_dataset()
-    print(df.shape)
+    categories = ['food_dining', 'travel', 'entertainment', 'personal_care', 'grocery', 'health_fitness', 'kids_pets', 'misc', 'gas_transport', 'home', 'shopping']
+    new_rows = []
+    start_2019_unix = int(datetime.datetime(2019, 1, 1).timestamp())
+    end_time_unix = int(datetime.datetime(2020, 6, 21).timestamp())
+    for _ in range(1000):
+        category = np.random.choice(categories)
+        unix_time = np.random.randint(start_2019_unix, end_time_unix)
+        # Round amt to 2 digits after decimal
+        amt = np.random.normal(25, 100)
+        amt = round(amt, 2)
+        amt = np.clip(amt, 5, 500)
+        new_row = {'user_id': 'EuLe21', 'category': category, 'unix_time': unix_time, 'amt': amt, 'state': 'PA', 'salary': 60000,
+                   'gender': 'M', 'name': 'Eugene Lee', 'age': 21, 'city': 'Pittsburgh'}
+        new_rows.append(new_row)
+    
+    # Combine df and new_rows into a new dataframe and return it
+    new_df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
+    return new_df
+
+def write_df(df):
+    csv_path = os.path.join(os.path.dirname(__file__), "credit_card_transaction.csv")
+    df.to_csv(csv_path, index=False)
+
+
+if __name__ == "__main__":
+    df = create_eugene_dataset()
+    write_df(df)
+    print(df[df['user_id'] == 'EuLe21'].head())
