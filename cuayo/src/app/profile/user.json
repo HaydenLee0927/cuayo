@@ -1,0 +1,28 @@
+{
+  "id": "user_001",
+  "name": "Eugene Lee",
+  "tag": "#EuLe21",
+  "birthday": "2004-04-03",
+  "nickname": "Cuayo",
+  "anonymousMode": false,
+  "notificationsEnabled": true,
+  "profileImage": "/profile/profile.jpg",
+  "cards": [
+    {
+      "id": "c1",
+      "bankName": "Chase",
+      "cardName": "Freedom Unlimited",
+      "last4": "1234",
+      "brand": "VISA",
+      "theme": "blue"
+    },
+    {
+      "id": "c2",
+      "bankName": "Bank of America",
+      "cardName": "Customized Cash",
+      "last4": "8891",
+      "brand": "MASTERCARD",
+      "theme": "black"
+    }
+  ]
+}
