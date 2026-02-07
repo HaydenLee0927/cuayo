@@ -23,19 +23,22 @@ def clean_dataset():
     """# Write the cleaned dataset to a new CSV file
     df.to_csv("credit_card_transaction.csv", index=False)"""
 
+    # Create user_id column
+    df['user_id'] = df['first'].str[0:2] + df['last'].str[0:2] + df['age'].astype(str)
+
     # For each First Name + Last Name combination, 
     # create a salary column with random values from 35k to 300k, rounding to nearest 1000
     # Sample the random value from a normal distribution with mean 100k and std 50k, and clip the values to be between 35k and 300k
     df['name'] = df['first'] + ' ' + df['last']
     df = df.drop(columns=['first', 'last'])
     salary_map = {}
-    for name in df['name'].unique():
+    for name in df['user_id'].unique():
         salary = np.random.normal(100000, 50000)
         salary = np.clip(salary, 35000, 300000)
         salary = (salary / 1000).round() * 1000
         salary_map[name] = salary
     
-    df['salary'] = df['name'].map(salary_map)
+    df['salary'] = df['user_id'].map(salary_map)
 
     # Write the cleaned dataset to a new CSV file
     df.to_csv("credit_card_transaction.csv", index=False)

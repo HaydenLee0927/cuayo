@@ -1,10 +1,5 @@
 import numpy as np
 import pandas as pd
 
-from dataset_prep import clean_dataset
+START_OF_2019 = 1325376018 # UNIX TIME FOR JAN 1 2019
 
-def add_salary(df):
-    # Add a salary column with random values from 35k to 300k, rounding to nearest 1000
-    df['salary'] = np.random.randint(35000, 300000, size=len(df))
-    df['salary'] = (df['salary'] / 1000).round() * 1000
-    return df
