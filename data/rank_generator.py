@@ -162,6 +162,8 @@ def search_user(user_id, timeframe, ref_time):
     # Check if user_id is in df
     if user_id not in df['user_id'].values:
         raise ValueError("user_id not found in dataset. Please check the user_id and try again.")
+    # Get salary of user_id
+    salary = df['salary'].values[0]
     # Filter by user_id and timeframe
     df = df[df['user_id'] == user_id]
     df = df[df['unix_time'] <= ref_time.timestamp()]
@@ -176,8 +178,6 @@ def search_user(user_id, timeframe, ref_time):
     category_totals = df.groupby('category')['amt'].sum()
     # Get total amount spent
     total_spent = df['amt'].sum()
-    # User salary
-    salary = df['salary'].values[0]
     budget = salary / 12 if timeframe == 'm' else salary / 52 if timeframe == 'w' else salary / 365
     # Return json style output
     # One line per each category
@@ -190,4 +190,4 @@ def search_user(user_id, timeframe, ref_time):
 
 if __name__ == "__main__":
     print(search_df('EuLe21', 'home', 'm', datetime.datetime(2019, 2, 15), state='PA'))
-    print(search_user('EuLe21', 'm', datetime.datetime(2019, 2, 15)))
+    print(search_user('JaSt22', 'w', datetime.datetime(2019, 2, 15)))
