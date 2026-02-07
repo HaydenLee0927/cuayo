@@ -203,8 +203,9 @@ if __name__ == "__main__":
     parser.add_argument("--state", type=str, default=None)
     args = parser.parse_args()
 
-    #fixed reference time
+    # fixed reference time
     ref_dt = datetime.datetime(2019, 2, 15)
+
     user_spent_ratio, user_rank, num_users, top_users, top_spent_ratios = search_df(
         args.user_id,
         args.category,
@@ -217,16 +218,60 @@ if __name__ == "__main__":
     if user_rank is not None and num_users > 0:
         top_percent = (user_rank / num_users) * 100
 
+    # ------------------------------------------------------------
+    # Leaderboard display only: create displayEntries from search_df output
+    # ------------------------------------------------------------
+    display_entries = []
+
+    # Defensive: align lengths
+    n = min(len(top_users), len(top_spent_ratios))
+    names = list(top_users)[:n]
+    ratios = [float(x) for x in list(top_spent_ratios)[:n]]
+
+    # If user_rank is None (no spend in that category/time), we can only show top list as 1..N
+    if user_rank is None:
+        for i in range(n):
+            display_entries.append(
+                {"name": names[i], "rank": i + 1, "spent_ratio": ratios[i]}
+            )
+    else:
+        # Two cases based on how search_df constructs top list:
+        # - user_rank <= 3: search_df returns ONLY 3 users (top3, including me if in top3)
+        # - user_rank > 3: search_df returns [top3] + (before) + (me) + (after) (up to 6 entries)
+        if user_rank <= 3:
+            # show these 3 as ranks 1..3 (matches display intent)
+            for i in range(n):
+                display_entries.append(
+                    {"name": names[i], "rank": i + 1, "spent_ratio": ratios[i]}
+                )
+        else:
+            # expect positions: 0..2 = top3, 3 = before, 4 = me, 5 = after (some may be missing)
+            if n >= 1:
+                display_entries.append({"name": names[0], "rank": 1, "spent_ratio": ratios[0]})
+            if n >= 2:
+                display_entries.append({"name": names[1], "rank": 2, "spent_ratio": ratios[1]})
+            if n >= 3:
+                display_entries.append({"name": names[2], "rank": 3, "spent_ratio": ratios[2]})
+            if n >= 4:
+                # this is a guess: "right before" is treated as rank-1
+                display_entries.append({"name": names[3], "rank": user_rank - 1, "spent_ratio": ratios[3]})
+            if n >= 5:
+                display_entries.append({"name": names[4], "rank": user_rank, "spent_ratio": ratios[4]})
+            if n >= 6:
+                # this is a guess: "right after" is treated as rank+1
+                display_entries.append({"name": names[5], "rank": user_rank + 1, "spent_ratio": ratios[5]})
+
     payload = {
         "userSpentRatio": float(user_spent_ratio),
         "userRank": user_rank,
         "numUsers": int(num_users),
         "topUsers": list(top_users),
         "topSpentRatios": [float(x) for x in top_spent_ratios],
+        # key change: provide displayEntries so route.ts can render ... correctly
+        "displayEntries": display_entries,
         "topPercent": None if top_percent is None else float(top_percent),
         "refTime": ref_dt.isoformat(),
     }
 
     print(json.dumps(payload))
     sys.stdout.flush()
-

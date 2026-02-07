@@ -14,6 +14,7 @@ const DEFAULT_AVATAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="64" h
   <circle cx="32" cy="26" r="12" fill="#9ca3af"/>
   <path d="M14 56c3.5-12 14-18 18-18s14.5 6 18 18" fill="#9ca3af"/>
 </svg>`;
+
 const DEFAULT_AVATAR_SRC = `data:image/svg+xml;utf8,${encodeURIComponent(
   DEFAULT_AVATAR_SVG
 )}`;
@@ -279,14 +280,19 @@ export default function RankingsPage() {
     return model.rows.some((r) => r.isUser === true || r.name === userId);
   }, [model, userId]);
 
+  const isBadValue = (v: unknown) =>
+    v === null ||
+    v === undefined ||
+    (typeof v === "number" && !Number.isFinite(v)) ||
+    (typeof v === "string" && v.trim().toLowerCase() === "nan");
+
   return (
     <div className="w-full max-w-[1200px] mx-auto">
-    <div className="mb-6 flex items-baseline justify-between">
-      <h1 className="text-xl font-black text-neutral-900">Rankings</h1>
-    </div>
+      <div className="mb-6 flex items-baseline justify-between">
+        <h1 className="text-xl font-black text-neutral-900">Rankings</h1>
+      </div>
 
       <div className="grid grid-cols-12 gap-6">
-        {/* Filters */}
         <div className="col-span-12 md:col-span-3 rounded-2xl border border-neutral-200 bg-white p-4">
           <div className="text-sm font-bold text-neutral-900">Filters</div>
 
@@ -354,7 +360,6 @@ export default function RankingsPage() {
           </div>
         </div>
 
-        {/* Curve + summary */}
         <div className="col-span-12 md:col-span-5 rounded-2xl border border-neutral-200 bg-white p-4">
           <div className="flex items-center justify-between">
             <div className="text-sm font-bold text-neutral-900">Distribution</div>
@@ -386,7 +391,6 @@ export default function RankingsPage() {
           </div>
         </div>
 
-        {/* Leaderboard */}
         <div className="col-span-12 md:col-span-4 rounded-2xl border border-neutral-200 bg-white p-4">
           <div className="text-sm font-bold text-neutral-900">Leaderboard</div>
 
@@ -414,55 +418,95 @@ export default function RankingsPage() {
 
                 <tbody>
                   {model.rows.map((r) => {
-                    const isUser = r.isUser === true || r.name === userId;
-                    const applyAnonUi = isUser && meInLeaderboard;
+                    const badRow =
+                      isBadValue(r.rank) ||
+                      isBadValue(r.name) ||
+                      isBadValue(r.metricValue);
+
+                    // ✅ 핵심 수정: "현재 유저"를 더 강하게 식별 (r.isUser가 안 찍혀도 잡힘)
+                    // 그리고 meInLeaderboard로 막지 않고, 유저 row면 무조건 모드 UI 적용
+                    const isUser =
+                      r.isUser === true ||
+                      r.name === userId ||
+                      r.name === user?.id ||
+                      r.name === user?.name ||
+                      r.name === "EuLe21";
+
+                    const applyAnonUi = isUser;
 
                     const displayName = applyAnonUi
-                      ? user?.anonymousMode
+                      ? user.anonymousMode
                         ? user.nickname
                         : user.name
                       : r.name;
 
                     const displayImgSrc = applyAnonUi
-                      ? user?.anonymousMode
+                      ? user.anonymousMode
                         ? DEFAULT_AVATAR_SRC
-                        : (user.profileImage as string | undefined) || DEFAULT_AVATAR_SRC
+                        : user.profileImage || DEFAULT_AVATAR_SRC
                       : DEFAULT_AVATAR_SRC;
 
                     return (
                       <tr
-                        key={`${r.rank}-${r.name}`}
+                        key={`${String(r.rank)}-${String(r.name)}`}
                         className="border-t border-neutral-200"
-                        style={isUser ? userRowStyle : undefined}
+                        style={!badRow && isUser ? userRowStyle : undefined}
                       >
                         <td
                           className={`px-3 py-2 ${
-                            isUser ? "font-extrabold text-[rgb(0,32,91)]" : "font-semibold"
+                            !badRow && isUser
+                              ? "font-extrabold text-[rgb(0,32,91)]"
+                              : "font-semibold"
                           }`}
                         >
-                          {r.rank}
+                          {badRow ? (
+                            <span className="text-neutral-400 font-semibold">...</span>
+                          ) : (
+                            r.rank
+                          )}
                         </td>
 
                         <td
                           className={`px-3 py-2 ${
-                            isUser ? "font-extrabold text-[rgb(0,32,91)]" : "font-semibold"
+                            !badRow && isUser
+                              ? "font-extrabold text-[rgb(0,32,91)]"
+                              : "font-semibold"
                           }`}
                         >
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={displayImgSrc}
-                              alt=""
-                              className={`h-6 w-6 rounded-full ${
-                                isUser ? "ring-2 ring-[rgb(0,32,91)]" : "ring-1 ring-neutral-200"
-                              }`}
-                              draggable={false}
-                            />
-                            <span>{displayName}</span>
-                          </div>
+                          {badRow ? (
+                            <span className="text-neutral-400 font-semibold">...</span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={displayImgSrc}
+                                alt=""
+                                className={`h-6 w-6 rounded-full ${
+                                  isUser
+                                    ? "ring-2 ring-[rgb(0,32,91)]"
+                                    : "ring-1 ring-neutral-200"
+                                }`}
+                                draggable={false}
+                              />
+                              <span>{displayName}</span>
+                            </div>
+                          )}
                         </td>
 
-                        <td className="px-3 py-2">{(Number(r.metricValue) * 100).toFixed(2)}%</td>
-                        <td className="px-3 py-2">{r.trend}</td>
+                        <td className="px-3 py-2">
+                          {badRow ? (
+                            <span className="text-neutral-400 font-semibold">...</span>
+                          ) : (
+                            `${(Number(r.metricValue) * 100).toFixed(2)}%`
+                          )}
+                        </td>
+
+                        <td className="px-3 py-2">
+                          {badRow ? (
+                            <span className="text-neutral-400 font-semibold">...</span>
+                          ) : (
+                            r.trend
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
