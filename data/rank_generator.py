@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import datetime
+import os
 
 
 
@@ -27,7 +28,7 @@ def search_df(user_id, category, time, ref_time, state=None):
     Note that top_users = top_spent_ratios = [] 
             if there are no transactions in category at all over time frame
     """
-    df = pd.read_csv("credit_card_transaction.csv")
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), "credit_card_transaction.csv"))
     #print(df.head())
     # Category: filter by category
     df = df[df['category'] == category]
@@ -97,4 +98,4 @@ def search_df(user_id, category, time, ref_time, state=None):
 
 
 if __name__ == "__main__":
-    print(search_df('TaCa35', 'grocery', 'm', datetime.datetime(2019, 1, 15)))
+    print(search_df('TaCa35', 'misc', 'm', datetime.datetime(2019, 1, 15)))
