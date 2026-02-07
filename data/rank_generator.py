@@ -149,6 +149,42 @@ def update_df(user_id, category, time, amt, state):
     # Write the updated df to csv
     df.to_csv(os.path.join(os.path.dirname(__file__), "credit_card_transaction.csv"), index=False)
 
+def user_best_worst(user_id, time, ref_time):
+    """
+    Docstring for user_best_worst
+    
+    :param user_id: user_id of the user we want to find the best and worst category for
+    :param time: time window to consider, either daily (d), weekly (w), or monthly (m)
+    :param ref_time: reference time in datetime format
+    :return: best_category, worst_category
+    best_category is the category with highest rank for the user_id in the given time window
+    worst_category is the category with lowest nonzero rank for the user_id in the given time window
+    If there are multiple categories tied for best or worst, return any one of them
+    If there are no transactions for the user_id in the given time window, return None, None
+    Return in json format: {"best_category": best_category, "worst_category": worst_category, "best_rank": best_rank, "worst_rank": worst_rank}
+    """
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), "credit_card_transaction.csv"))
+    # Check if user_id is in df
+    if user_id not in df['user_id'].values:
+        raise ValueError("user_id not found in dataset. Please check the user_id and try again.")
+    categories = df['category'].unique()
+    best_category = None
+    worst_category = None
+    best_rank = float('inf')
+    worst_rank = float('-inf')
+    for category in categories:
+        user_spent_ratio, user_rank, num_users, top_users, top_spent_ratios = search_df(user_id, category, time, ref_time)
+        if user_rank is not None:
+            if user_rank < best_rank:
+                best_rank = user_rank
+                best_category = category
+            if user_rank > worst_rank:
+                worst_rank = user_rank
+                worst_category = category
+    if best_category is None:
+        return {"best_category": None, "worst_category": None, "best_rank": None, "worst_rank": None}
+    return {"best_category": best_category, "worst_category": worst_category, "best_rank": best_rank, "worst_rank": worst_rank}
+
 def search_user(user_id, timeframe, ref_time):
     """
     Docstring for search_user
@@ -216,7 +252,7 @@ if __name__ == "__main__":
         state=args.state,
     )
 
-    #print(search_user(args.user_id, args.time, ref_dt))
+    print(user_best_worst(args.user_id, args.time, ref_dt))
 
     top_percent = None
     if user_rank is not None and num_users > 0:
