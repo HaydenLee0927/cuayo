@@ -179,8 +179,8 @@ def search_user(user_id, timeframe, ref_time):
     # Get total amount spent
     total_spent = df['amt'].sum()
     budget = salary / 12 if timeframe == 'm' else salary / 52 if timeframe == 'w' else salary / 365
-    print(salary)
-    print(budget)
+    #print(salary)
+    #print(budget)
     # Return json style output
     # One line per each category
     output = {}

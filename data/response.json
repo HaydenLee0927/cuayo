@@ -251,5 +251,44 @@
       ]
     },
     "advice": "You’re well under budget this month ($3,787.64 spent vs $10,416.67), so use the surplus intentionally instead of letting it drift. Set a firm cap for Shopping and Personal Care next month (e.g., cut each by 15–20%) by adding a 24-hour pause rule for non-essentials and pre-loading only that amount to a separate card/account. Move at least half of the current $6,629 surplus into savings or debt payoff today so it doesn’t get re-spent later in the month."
+  },
+  {
+    "createdAt": "2026-02-07T17:09:27Z",
+    "payload": {
+      "mode": "short",
+      "userId": "EuLe21",
+      "time": "m",
+      "total": 3787.64,
+      "budget": 5000,
+      "budgetDelta": 1212.3600000000001,
+      "topCategories": [
+        {
+          "category": "shopping",
+          "amount": 950.6,
+          "proportion": 0.250974221414918
+        },
+        {
+          "category": "personal_care",
+          "amount": 703.7,
+          "proportion": 0.18578851210780328
+        },
+        {
+          "category": "home",
+          "amount": 546.47,
+          "proportion": 0.14427717523312672
+        },
+        {
+          "category": "kids_pets",
+          "amount": 395.67,
+          "proportion": 0.10446346537685737
+        },
+        {
+          "category": "gas_transport",
+          "amount": 372.4,
+          "proportion": 0.09831979808007096
+        }
+      ]
+    },
+    "advice": "You’re under budget by about $1,212 this month, but Shopping ($951) and Personal Care ($704) are driving over a third of your spend. Set a hard cap for the rest of the month—e.g., limit Shopping to $250 and Personal Care to $150—and pause nonessential purchases until next month. If you want to use the surplus, move at least $600 of it to savings or debt payoff now so it doesn’t get absorbed by extra discretionary spending."
   }
 ]
