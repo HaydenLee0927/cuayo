@@ -5,7 +5,7 @@ if __name__ == "__main__":
     update_df(
         user_id="EuLe21",
         category="entertainment",
-        time=datetime.datetime(2019, 2, 15, 12, 0),
+        time=datetime.datetime(2019, 2, 14, 12, 0),
         amt=23.75,
         state="PA"
     )

@@ -216,7 +216,7 @@ if __name__ == "__main__":
         state=args.state,
     )
 
-    print(search_user(args.user_id, args.time, ref_dt))
+    #print(search_user(args.user_id, args.time, ref_dt))
 
     top_percent = None
     if user_rank is not None and num_users > 0:
