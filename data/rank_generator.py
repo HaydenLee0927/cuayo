@@ -163,26 +163,61 @@ def user_best_worst(user_id, time, ref_time):
     If there are no transactions for the user_id in the given time window, return None, None
     Return in json format: {"best_category": best_category, "worst_category": worst_category, "best_rank": best_rank, "worst_rank": worst_rank}
     """
+    # Read transactions once and perform vectorized per-category ranking.
     df = pd.read_csv(os.path.join(os.path.dirname(__file__), "credit_card_transaction.csv"))
-    # Check if user_id is in df
+    # Check if user_id exists globally in dataset
     if user_id not in df['user_id'].values:
         raise ValueError("user_id not found in dataset. Please check the user_id and try again.")
-    categories = df['category'].unique()
-    best_category = None
-    worst_category = None
-    best_rank = float('inf')
-    worst_rank = float('-inf')
-    for category in categories:
-        user_spent_ratio, user_rank, num_users, top_users, top_spent_ratios = search_df(user_id, category, time, ref_time)
-        if user_rank is not None:
-            if user_rank < best_rank:
-                best_rank = user_rank
-                best_category = category
-            if user_rank > worst_rank:
-                worst_rank = user_rank
-                worst_category = category
-    if best_category is None:
+
+    categories = {'food_dining', 'travel', 'entertainment', 'personal_care', 'grocery',
+                  'health_fitness', 'kids_pets', 'misc', 'gas_transport', 'home', 'shopping'}
+
+    # Compute time window bounds
+    ref_unix = int(ref_time.timestamp())
+    if time == 'd':
+        min_unix = ref_unix - 86400
+    elif time == 'w':
+        min_unix = ref_unix - 7 * 86400
+    else:  # 'm'
+        min_unix = ref_unix - 30 * 86400
+
+    # Filter rows by time window and categories of interest (one pass)
+    df_time = df[(df['unix_time'] >= min_unix) & (df['unix_time'] <= ref_unix) & (df['category'].isin(categories))]
+    if df_time.empty:
         return {"best_category": None, "worst_category": None, "best_rank": None, "worst_rank": None}
+
+    # Precompute user info (salary, name) once
+    user_info = df[['user_id', 'salary', 'name']].drop_duplicates(subset=['user_id'])
+
+    # Sum amounts per category and user (vectorized)
+    cat_user_amt = df_time.groupby(['category', 'user_id'], sort=False)['amt'].sum().reset_index()
+    cat_user_amt = cat_user_amt.merge(user_info, on='user_id', how='left')
+
+    # Compute spent_ratio using same salary ratio logic as search_df
+    salary_ratio = 12 if time == 'm' else 52 if time == 'w' else 365
+    cat_user_amt['spent_ratio'] = (cat_user_amt['amt'] / (cat_user_amt['salary'] / salary_ratio)).round(4)
+
+    # Rank within each category (preserve original ranking direction)
+    # NOTE: original used ascending=True, method='min' so we keep that to avoid changing semantics
+    cat_user_amt['rank'] = cat_user_amt.groupby('category')['spent_ratio'].rank(ascending=True, method='min')
+
+    # Extract the user's per-category ranks
+    user_rows = cat_user_amt[cat_user_amt['user_id'] == user_id]
+    if user_rows.empty:
+        return {"best_category": None, "worst_category": None, "best_rank": None, "worst_rank": None}
+
+    # Determine best (minimum rank) and worst (maximum rank) categories for the user
+    user_rows = user_rows[['category', 'rank']]
+    # Convert rank to integer where possible
+    user_rows['rank'] = user_rows['rank'].astype(int)
+
+    best_idx = user_rows['rank'].idxmin()
+    worst_idx = user_rows['rank'].idxmax()
+    best_category = user_rows.loc[best_idx, 'category']
+    worst_category = user_rows.loc[worst_idx, 'category']
+    best_rank = int(user_rows.loc[best_idx, 'rank'])
+    worst_rank = int(user_rows.loc[worst_idx, 'rank'])
+
     return {"best_category": best_category, "worst_category": worst_category, "best_rank": best_rank, "worst_rank": worst_rank}
 
 def search_user(user_id, timeframe, ref_time):
