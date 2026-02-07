@@ -15,7 +15,8 @@ type ApiResponse = {
   pie: ApiPieRow[];
   total: number;
   budget: number;
-  budgetDelta: number; // budget - total
+  budgetDelta: number;
+  advice?: string
 };
 
 function formatMoney(x: number) {
@@ -47,6 +48,56 @@ function ColorSwatch({ color }: { color: string }) {
 }
 
 /**
+ * Fix mojibake like "You��re" (UTF-8 decoded wrong) by replacing common replacement characters.
+ * This is a UI-side patch; best fix is to force UTF-8 in the python/route output.
+ */
+function sanitizeAdviceText(s: string) {
+  if (!s) return "";
+  let t = s;
+
+  // Replace the Unicode replacement char and common mojibake sequences
+  // Note: We can't perfectly recover the original apostrophe, but this makes it legible.
+  t = t.replaceAll("\uFFFD", "'"); // �
+  t = t.replaceAll("��", "'");
+
+  // Normalize weird spacing
+  t = t.replace(/[ \t]+\n/g, "\n");
+  t = t.replace(/\n{3,}/g, "\n\n");
+
+  return t.trim();
+}
+
+/**
+ * Render advice with better readability (paragraphs) instead of one long raw line.
+ */
+function AdviceBlock({ text }: { text: string }) {
+  const clean = sanitizeAdviceText(text);
+  if (!clean) return null;
+
+  const parts = clean.split(/\n\s*\n/g); // blank-line paragraphs
+  return (
+    <div
+      style={{
+        marginTop: 8,
+        padding: 12,
+        borderRadius: 12,
+        border: "1px solid rgba(0,0,0,0.08)",
+        background: "rgba(255,255,255,0.78)",
+        color: "rgba(15,23,42,0.92)",
+        lineHeight: 1.6,
+        fontSize: 13.5,
+      }}
+    >
+      {parts.map((p, i) => (
+        <p key={i} style={{ margin: i === 0 ? 0 : "10px 0 0 0", whiteSpace: "pre-wrap" }}>
+          {p}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/**
  * SVG donut pie chart:
  * - Category-only labels (no amount/proportion) for sufficiently large slices
  * - For small slices (< 3%), show NO label at all (even outside)
@@ -65,7 +116,6 @@ function PieSvg(props: {
   const size = props.size ?? 520; // bigger chart
   const R = size / 2;
 
-  // Local coordinates: 0..size
   const cx = R;
   const cy = R;
 
@@ -75,8 +125,6 @@ function PieSvg(props: {
 
   const SMALL_SLICE_THRESHOLD = 0.03;
   const POP_OUT_DISTANCE = 12;
-
-  // Padding: ensure popped slices are never clipped
   const PADDING = POP_OUT_DISTANCE + 18;
 
   const slices = useMemo(() => {
@@ -133,7 +181,6 @@ function PieSvg(props: {
           const isSelected = props.selectedLabel === s.label;
           const color = props.colorMap[s.label] ?? "#334155";
 
-          // Pop-out translation along mid-angle
           const dx = isSelected ? POP_OUT_DISTANCE * Math.cos(mid) : 0;
           const dy = isSelected ? POP_OUT_DISTANCE * Math.sin(mid) : 0;
 
@@ -159,7 +206,6 @@ function PieSvg(props: {
                 <title>{s.label}</title>
               </path>
 
-              {/* Only show category label for sufficiently large slices */}
               {showLabel ? (
                 <text
                   x={labelP.x}
@@ -178,7 +224,6 @@ function PieSvg(props: {
           );
         })}
 
-        {/* Donut hole: click toggles table panel */}
         <circle
           cx={cx}
           cy={cy}
@@ -203,7 +248,6 @@ function PieSvg(props: {
           fontWeight={900}
           style={{ userSelect: "none", pointerEvents: "none" }}
         >
-          {props.selectedLabel ? "Click center for table" : "Click slice"}
         </text>
       </g>
     </svg>
@@ -228,11 +272,18 @@ export default function AnalyticsPage() {
   const [sortKey, setSortKey] = useState<SortKey>("amount");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
+  // ✅ NEW: detailed report state
+  const [detailedLoading, setDetailedLoading] = useState(false);
+  const [detailedError, setDetailedError] = useState<string>("");
+  const [detailedReport, setDetailedReport] = useState<string>("");
+  const [showDetailed, setShowDetailed] = useState(false);
+
   async function load() {
     setLoading(true);
     setError("");
 
     try {
+      // default => short advice (route should default to short)
       const qs = new URLSearchParams({ userId: USER_ID, time, refTime: REF_TIME });
       const res = await fetch(`/api/analytics?${qs.toString()}`, { cache: "no-store" });
       const json = (await res.json()) as ApiResponse;
@@ -246,6 +297,11 @@ export default function AnalyticsPage() {
       setData(json);
       setSelectedCategory(null);
       setShowTable(false);
+
+      // reset detailed when timeframe changes/reloads
+      setDetailedReport("");
+      setDetailedError("");
+      setShowDetailed(false);
     } catch (e: any) {
       setData(null);
       setError(String(e?.message ?? e));
@@ -254,9 +310,42 @@ export default function AnalyticsPage() {
     }
   }
 
+  async function loadDetailedReport() {
+    setDetailedLoading(true);
+    setDetailedError("");
+
+    try {
+      const qs = new URLSearchParams({
+        userId: USER_ID,
+        time,
+        refTime: REF_TIME,
+        mode: "detailed",
+      });
+
+      const res = await fetch(`/api/analytics?${qs.toString()}`, { cache: "no-store" });
+      const json = (await res.json()) as ApiResponse;
+
+      if (!res.ok || !json?.ok) {
+        setDetailedReport("");
+        setDetailedError((json as any)?.error ?? `HTTP ${res.status}`);
+        setShowDetailed(true);
+        return;
+      }
+
+      const text = sanitizeAdviceText(String(json.advice ?? ""));
+      setDetailedReport(text);
+      setShowDetailed(true);
+    } catch (e: any) {
+      setDetailedReport("");
+      setDetailedError(String(e?.message ?? e));
+      setShowDetailed(true);
+    } finally {
+      setDetailedLoading(false);
+    }
+  }
+
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [time]);
 
   const pieData = useMemo(() => {
@@ -313,12 +402,8 @@ export default function AnalyticsPage() {
   const delta = data?.budgetDelta ?? 0;
   const saved = delta >= 0;
 
-  // Per your rule: delta >= 0 => red (saved), delta < 0 => blue (lost).
-  const deltaColor = saved ? "#dc2626" : "#2563eb";
+  const deltaColor = saved ? "#2563eb" : "#dc2626";
   const deltaTitle = saved ? "You saved money" : "You lost money";
-  const deltaSubtitle = saved
-    ? "Your spending is under the budget for this timeframe."
-    : "Your spending is above the budget for this timeframe.";
 
   function onSelectSlice(label: string | null) {
     setSelectedCategory(label);
@@ -344,270 +429,361 @@ export default function AnalyticsPage() {
     return sortDir === "asc" ? " ▲" : " ▼";
   }
 
+  const shortAdvice = sanitizeAdviceText(String(data?.advice ?? ""));
+
   return (
     <div className="w-full max-w-[1200px] mx-auto">
-  <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>
-    Analytics
-  </h1>
-  <div style={{ opacity: 0.75, marginBottom: 18 }}>
-    Spending breakdown and budget status for the selected timeframe.
-  </div>
+      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>Analytics</h1>
 
-        {/* Controls: time only, no Refresh */}
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end", marginBottom: 18 }}>
-          <div>
-            <div style={{ fontSize: 12, opacity: 0.7 }}>Time</div>
-            <select
-              value={time}
-              onChange={(e) => setTime(e.target.value as TimeOpt)}
-              style={{
-                height: 40,
-                padding: "0 10px",
-                borderRadius: 10,
-                border: "1px solid rgba(0,0,0,0.15)",
-              }}
-            >
-              <option value="d">day</option>
-              <option value="w">week</option>
-              <option value="m">month</option>
-            </select>
-          </div>
-
-          <div style={{ fontSize: 12, opacity: 0.65, paddingBottom: 6 }}>{loading ? "Loading..." : " "}</div>
-        </div>
-
-        {error ? (
-          <div
+      {/* Controls */}
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end", marginBottom: 18 }}>
+        <div>
+          <div style={{ fontSize: 12, opacity: 0.7 }}>Time</div>
+          <select
+            value={time}
+            onChange={(e) => setTime(e.target.value as TimeOpt)}
             style={{
-              ...cardStyle,
-              background: "rgba(254, 226, 226, 0.85)",
-              border: "1px solid rgba(220,38,38,0.25)",
-              marginBottom: 16,
+              height: 40,
+              padding: "0 10px",
+              borderRadius: 10,
+              border: "1px solid rgba(0,0,0,0.15)",
             }}
           >
-            <div style={{ fontWeight: 800 }}>Error</div>
-            <div style={{ whiteSpace: "pre-wrap" }}>{error}</div>
-          </div>
-        ) : null}
+            <option value="d">day</option>
+            <option value="w">week</option>
+            <option value="m">month</option>
+          </select>
+        </div>
 
-        {/* Summary */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 16 }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: 12, opacity: 0.7 }}>Total Spent</div>
-            <div style={{ fontSize: 22, fontWeight: 800 }}>${formatMoney(data?.total ?? 0)}</div>
-            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>Selected timeframe: {time}</div>
-          </div>
+        <div style={{ fontSize: 12, opacity: 0.65, paddingBottom: 6 }}>{loading ? "Loading..." : " "}</div>
+      </div>
 
-          <div style={cardStyle}>
-            <div style={{ fontSize: 12, opacity: 0.7 }}>Budget</div>
-            <div style={{ fontSize: 22, fontWeight: 800 }}>${formatMoney(data?.budget ?? 0)}</div>
-            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>From search_user() output</div>
-          </div>
+      {error ? (
+        <div
+          style={{
+            ...cardStyle,
+            background: "rgba(254, 226, 226, 0.85)",
+            border: "1px solid rgba(220,38,38,0.25)",
+            marginBottom: 16,
+          }}
+        >
+          <div style={{ fontWeight: 800 }}>Error</div>
+          <div style={{ whiteSpace: "pre-wrap" }}>{error}</div>
+        </div>
+      ) : null}
 
-          <div style={cardStyle}>
-            <div style={{ fontSize: 12, opacity: 0.7 }}>{deltaTitle}</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: deltaColor }}>
-              {saved ? "+" : "-"}${formatMoney(Math.abs(delta))}
-            </div>
-            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>{deltaSubtitle}</div>
+      {/* Summary */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 16 }}>
+        <div style={cardStyle}>
+          <div style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+              }}>
+          <div style={{ fontSize: 12, opacity: 0.7 }}>Total Spent</div>
+          <div style={{ fontSize: 22, fontWeight: 800 }}>${formatMoney(data?.total ?? 0)}</div>
           </div>
         </div>
 
-        {/* Pie + right panel */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: showRightPanel ? "1fr 440px" : "1fr",
-            gap: 12,
-            alignItems: "start",
-          }}
-        >
-          <div style={cardStyle}>
-            <div style={{ fontWeight: 800, marginBottom: 8 }}>Spending by Category</div>
-            <div style={{ opacity: 0.7, fontSize: 12, marginBottom: 10 }}>
-              Click a slice to open a single detail panel (and pop the slice out). Click the center hole to toggle the full category table.
-              For categories under 3%, no label is shown on the chart to keep it readable.
+        <div style={cardStyle}>
+          <div style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+              }}>
+          <div style={{ fontSize: 12, opacity: 0.7 }}>Budget</div>
+          <div style={{ fontSize: 22, fontWeight: 800 }}>${formatMoney(data?.budget ?? 0)}</div>
+          </div>
+        </div>
+
+        <div style={cardStyle}>
+          <div style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+              }}>
+          <div style={{ fontSize: 12, opacity: 0.7 }}>{deltaTitle}</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: deltaColor }}>
+            {saved ? "+" : "-"}${formatMoney(Math.abs(delta))}
+          </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pie + right panel */
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: showRightPanel ? "1fr 440px" : "1fr",
+          gap: 12,
+          alignItems: "start",
+        }}
+      >
+        {/* Spending by Category card */}
+        <div style={cardStyle}>
+          {/* ✅ Header row with button on right top */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+            <div>
+              <div style={{ fontWeight: 800, marginBottom: 4 }}>Spending by Category</div>
+
+              {/* ✅ Replace the old helper text block with the short advice (no separate section) */}
+              <div style={{ opacity: 0.78, fontSize: 12.5, lineHeight: 1.5 }}>
+                {shortAdvice
+                  ? shortAdvice
+                  : "short advice"}
+              </div>
             </div>
 
-            {pieData.length === 0 ? (
-              <div style={{ opacity: 0.7 }}>No category spending found for this timeframe.</div>
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center", // ALWAYS centered
-                  alignItems: "center",
-                  paddingTop: 8,
+            {/* Button top-right */}
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              <button
+                onClick={async () => {
+                  // If already generated, just toggle visibility
+                  if (detailedReport || detailedError) {
+                    setShowDetailed((v) => !v);
+                    return;
+                  }
+                  await loadDetailedReport();
                 }}
+                disabled={detailedLoading}
+                style={{
+                  height: 36,
+                  padding: "0 12px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(0,0,0,0.15)",
+                  background: detailedLoading ? "rgba(15, 23, 42, 0.06)" : "rgba(15, 23, 42, 0.10)",
+                  cursor: detailedLoading ? "default" : "pointer",
+                  fontWeight: 800,
+                  fontSize: 12.5,
+                  whiteSpace: "nowrap",
+                }}
+                title="Generate a long-form spending report"
               >
-                <PieSvg
-                  data={pieData}
-                  // bigger chart
-                  size={520}
-                  selectedLabel={selectedCategory}
-                  onSelectSlice={onSelectSlice}
-                  onCenterClick={onCenterClick}
-                  colorMap={colorMap}
-                />
-              </div>
-            )}
+                {detailedLoading
+                  ? "Generating..."
+                  : detailedReport || detailedError
+                    ? "Toggle report"
+                    : "Generate detailed report"}
+              </button>
+
+              {(detailedReport || detailedError) ? (
+                <button
+                  onClick={() => {
+                    setDetailedReport("");
+                    setDetailedError("");
+                    setShowDetailed(false);
+                  }}
+                  style={{
+                    height: 36,
+                    padding: "0 10px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    background: "rgba(255,255,255,0.65)",
+                    cursor: "pointer",
+                    fontWeight: 800,
+                    fontSize: 12.5,
+                    whiteSpace: "nowrap",
+                  }}
+                  title="Clear the generated report"
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
           </div>
 
-          {showRightPanel ? (
-            <div style={cardStyle}>
-              {/* Single category detail */}
-              {selectedCategory && selectedRow ? (
-                <>
-                  <div style={{ fontWeight: 900, fontSize: 16, marginBottom: 6 }}>Category Detail</div>
-                  <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 12 }}>
-                    Click the same slice again to close, or click the center to open the full table.
-                  </div>
+          {/* Pie */}
+          {pieData.length === 0 ? (
+            <div style={{ opacity: 0.7, marginTop: 10 }}>No category spending found for this timeframe.</div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                paddingTop: 8,
+              }}
+            >
+              <PieSvg
+                data={pieData}
+                size={520}
+                selectedLabel={selectedCategory}
+                onSelectSlice={onSelectSlice}
+                onCenterClick={onCenterClick}
+                colorMap={colorMap}
+              />
+            </div>
+          )}
 
-                  <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.75)" }}>
-                    <div style={{ fontSize: 12, opacity: 0.7 }}>Category</div>
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
-                      <ColorSwatch color={colorMap[selectedRow.category] ?? "#334155"} />
-                      <div style={{ fontSize: 18, fontWeight: 900 }}>{selectedRow.category}</div>
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <div>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>Amount</div>
-                        <div style={{ fontSize: 16, fontWeight: 800 }}>${formatMoney(selectedRow.amount)}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>Share of total</div>
-                        <div style={{ fontSize: 16, fontWeight: 800 }}>{formatPct(selectedRow.proportion)}</div>
-                      </div>
-                    </div>
-
-                    <div style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
-                      Total spent (timeframe): ${formatMoney(data?.total ?? 0)}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setSelectedCategory(null)}
-                    style={{
-                      marginTop: 12,
-                      height: 38,
-                      width: "100%",
-                      borderRadius: 10,
-                      border: "1px solid rgba(0,0,0,0.15)",
-                      background: "rgba(15, 23, 42, 0.08)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Close
-                  </button>
-                </>
+          {/* ✅ Detailed report output (shows only when generated / toggled) */}
+          {showDetailed ? (
+            <div style={{ marginTop: 12 }}>
+              {detailedError ? (
+                <div
+                  style={{
+                    padding: 12,
+                    borderRadius: 12,
+                    border: "1px solid rgba(220,38,38,0.25)",
+                    background: "rgba(254,226,226,0.70)",
+                    whiteSpace: "pre-wrap",
+                    fontSize: 13.5,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {sanitizeAdviceText(detailedError)}
+                </div>
               ) : null}
 
-              {/* Category detail table (opened by center click) */}
-              {showTable ? (
-                <>
-                  <div style={{ fontWeight: 900, fontSize: 16, marginBottom: 6 }}>Category Detail Table</div>
-                  <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 12 }}>
-                    Click the center hole again to close. Click a row to open a single-category panel.
-                    Click column headers to sort (toggle asc/desc).
+              {detailedReport ? (
+                <div>
+                  {/* title row */}
+                  <div style={{ fontWeight: 900, marginBottom: 6, marginTop: detailedError ? 10 : 0 }}>
+                    Detailed Report
                   </div>
-
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                      <thead>
-                        <tr style={{ textAlign: "left", fontSize: 12, opacity: 0.7 }}>
-                          <th style={{ padding: "10px 8px", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>Category</th>
-
-                          <th
-                            style={{
-                              padding: "10px 8px",
-                              borderBottom: "1px solid rgba(0,0,0,0.08)",
-                              cursor: "pointer",
-                              userSelect: "none",
-                            }}
-                            onClick={() => toggleSort("amount")}
-                            title="Sort by amount"
-                          >
-                            Amount{sortIndicator("amount")}
-                          </th>
-
-                          <th
-                            style={{
-                              padding: "10px 8px",
-                              borderBottom: "1px solid rgba(0,0,0,0.08)",
-                              cursor: "pointer",
-                              userSelect: "none",
-                            }}
-                            onClick={() => toggleSort("proportion")}
-                            title="Sort by proportion"
-                          >
-                            Proportion{sortIndicator("proportion")}
-                          </th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {sortedTableRows.map((r) => (
-                          <tr
-                            key={r.label}
-                            onClick={() => {
-                              setSelectedCategory(r.label);
-                              setShowTable(false);
-                            }}
-                            style={{ cursor: "pointer" }}
-                          >
-                            <td style={{ padding: "10px 8px", borderBottom: "1px solid rgba(0,0,0,0.06)", fontWeight: 800 }}>
-                              <span style={{ display: "inline-flex", alignItems: "center" }}>
-                                <ColorSwatch color={colorMap[r.label] ?? "#334155"} />
-                                {r.label}
-                              </span>
-                            </td>
-                            <td style={{ padding: "10px 8px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-                              ${formatMoney(r.value)}
-                            </td>
-                            <td style={{ padding: "10px 8px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-                              {formatPct(r.proportion)}
-                            </td>
-                          </tr>
-                        ))}
-                        {sortedTableRows.length === 0 ? (
-                          <tr>
-                            <td colSpan={3} style={{ padding: 14, opacity: 0.7 }}>
-                              No rows.
-                            </td>
-                          </tr>
-                        ) : null}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
+                  <AdviceBlock text={detailedReport} />
+                </div>
               ) : null}
             </div>
           ) : null}
         </div>
 
-        {/* Budget section */}
-        <div style={{ marginTop: 12, ...cardStyle }}>
-          <div style={{ fontWeight: 800, marginBottom: 6 }}>Budget Status</div>
-          <div style={{ opacity: 0.75, fontSize: 13 }}>
-            This section uses only values returned by search_user(): total spending and overall budget.
-          </div>
+        {/* Right panel */}
+        {showRightPanel ? (
+          <div style={cardStyle}>
+            {/* Single category detail */}
+            {selectedCategory && selectedRow ? (
+              <>
+                <div style={{ fontWeight: 900, fontSize: 16, marginBottom: 6 }}>Category Detail</div>
 
-          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
-            <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.75)" }}>
-              <div style={{ fontSize: 12, opacity: 0.7 }}>Total spent</div>
-              <div style={{ fontSize: 20, fontWeight: 800 }}>${formatMoney(data?.total ?? 0)}</div>
-            </div>
+                <div
+                  style={{
+                    padding: 12,
+                    borderRadius: 12,
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    background: "rgba(255,255,255,0.75)",
+                  }}
+                >
+                  <div style={{ fontSize: 12, opacity: 0.7 }}>Category</div>
+                  <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
+                    <ColorSwatch color={colorMap[selectedRow.category] ?? "#334155"} />
+                    <div style={{ fontSize: 18, fontWeight: 900 }}>{selectedRow.category}</div>
+                  </div>
 
-            <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.75)" }}>
-              <div style={{ fontSize: 12, opacity: 0.7 }}>{deltaTitle}</div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: deltaColor }}>
-                {saved ? "+" : "-"}${formatMoney(Math.abs(delta))}
-              </div>
-              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>{deltaSubtitle}</div>
-            </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.7 }}>Amount</div>
+                      <div style={{ fontSize: 16, fontWeight: 800 }}>${formatMoney(selectedRow.amount)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.7 }}>Share of total</div>
+                      <div style={{ fontSize: 16, fontWeight: 800 }}>{formatPct(selectedRow.proportion)}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
+                    Total spent (timeframe): ${formatMoney(data?.total ?? 0)}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  style={{
+                    marginTop: 12,
+                    height: 38,
+                    width: "100%",
+                    borderRadius: 10,
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    background: "rgba(15, 23, 42, 0.08)",
+                    cursor: "pointer",
+                  }}
+                >
+                  Close
+                </button>
+              </>
+            ) : null}
+
+            {/* Category detail table */}
+            {showTable ? (
+              <>
+                <div style={{ fontWeight: 900, fontSize: 16, marginBottom: 6 }}>Category Detail Table</div>
+
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ textAlign: "left", fontSize: 12, opacity: 0.7 }}>
+                        <th style={{ padding: "10px 8px", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>Category</th>
+
+                        <th
+                          style={{
+                            padding: "10px 8px",
+                            borderBottom: "1px solid rgba(0,0,0,0.08)",
+                            cursor: "pointer",
+                            userSelect: "none",
+                          }}
+                          onClick={() => toggleSort("amount")}
+                          title="Sort by amount"
+                        >
+                          Amount{sortIndicator("amount")}
+                        </th>
+
+                        <th
+                          style={{
+                            padding: "10px 8px",
+                            borderBottom: "1px solid rgba(0,0,0,0.08)",
+                            cursor: "pointer",
+                            userSelect: "none",
+                          }}
+                          onClick={() => toggleSort("proportion")}
+                          title="Sort by proportion"
+                        >
+                          Proportion{sortIndicator("proportion")}
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {sortedTableRows.map((r) => (
+                        <tr
+                          key={r.label}
+                          onClick={() => {
+                            setSelectedCategory(r.label);
+                            setShowTable(false);
+                          }}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <td style={{ padding: "10px 8px", borderBottom: "1px solid rgba(0,0,0,0.06)", fontWeight: 800 }}>
+                            <span style={{ display: "inline-flex", alignItems: "center" }}>
+                              <ColorSwatch color={colorMap[r.label] ?? "#334155"} />
+                              {r.label}
+                            </span>
+                          </td>
+                          <td style={{ padding: "10px 8px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                            ${formatMoney(r.value)}
+                          </td>
+                          <td style={{ padding: "10px 8px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+                            {formatPct(r.proportion)}
+                          </td>
+                        </tr>
+                      ))}
+                      {sortedTableRows.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} style={{ padding: 14, opacity: 0.7 }}>
+                            No rows.
+                          </td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : null}
           </div>
-        </div>
+        ) : null}
       </div>
+      }
+    </div>
   );
 }

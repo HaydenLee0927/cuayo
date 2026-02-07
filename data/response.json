@@ -1,0 +1,255 @@
+[
+  {
+    "createdAt": "2026-02-07T15:45:57Z",
+    "payload": {
+      "mode": "short",
+      "userId": "EuLe21",
+      "time": "d",
+      "total": 371.74,
+      "budget": 342.47,
+      "budgetDelta": -29.269999999999982,
+      "topCategories": [
+        {
+          "category": "home",
+          "amount": 246.21,
+          "proportion": 0.6623177489643299
+        },
+        {
+          "category": "health_fitness",
+          "amount": 120.53,
+          "proportion": 0.32423199010060794
+        },
+        {
+          "category": "misc",
+          "amount": 5,
+          "proportion": 0.01345026093506214
+        }
+      ]
+    },
+    "advice": "You’re $29.27 over today’s budget ($371.74 vs $342.47), and most spending is in home (66%) and health/fitness (32%). Pause any remaining discretionary home purchases today and defer them to the next budget window, aiming to cut at least $30. If you need to spend more, cap health/fitness for the rest of the day to essentials only and offset it by reducing home spend tomorrow."
+  },
+  {
+    "createdAt": "2026-02-07T15:46:37Z",
+    "payload": {
+      "mode": "detailed",
+      "userId": "EuLe21",
+      "time": "d",
+      "total": 371.74,
+      "budget": 342.47,
+      "budgetDelta": -29.269999999999982,
+      "topCategories": [
+        {
+          "category": "home",
+          "amount": 246.21,
+          "proportion": 0.6623177489643299
+        },
+        {
+          "category": "health_fitness",
+          "amount": 120.53,
+          "proportion": 0.32423199010060794
+        },
+        {
+          "category": "misc",
+          "amount": 5,
+          "proportion": 0.01345026093506214
+        }
+      ]
+    },
+    "advice": "You’re over budget by $29.27 today, driven almost entirely by unusually high Home ($246.21) and substantial Health & Fitness ($120.53) spend.\n\nKey observations\n- Total spend is $371.74 vs a $342.47 budget (8.5% over).\n- Home dominates the day: $246.21 (66.2% of all spending); this is the primary reason you missed budget.\n- Health & Fitness is also significant at $120.53 (32.4%); combined with Home, these two categories account for 98.6% of spend.\n- Miscellaneous is negligible at $5.00 (1.3%), so “small leaks” aren’t the issue—this is about a couple of large decisions.\n- If Home/Health spending continues at this pace without offsetting cuts, you’ll keep running deficits; you need either a one-time explanation (e.g., bill/repair) or a deliberate reallocation.\n\nSpecific adjustments by category\n- Home: Identify what portion was fixed/one-time (rent, utility bill, repair, supplies). If discretionary (decor, non-urgent items), pause additional Home purchases for the next 7 days and defer anything non-essential; aim to offset at least $25–$30 by delaying or canceling the next Home-related spend.\n- Home: If this was a necessary one-off (repair/annual payment), reclassify it mentally as “planned irregular” and plan a weekly sinking-fund amount going forward so it doesn’t blow up daily/weekly budgets.\n- Health & Fitness: Audit today’s $120.53—if it includes a membership, class pack, supplements, or gear, avoid any add-on purchases this week and cap additional Health & Fitness spending to essentials only; prioritize using what you’ve already paid for.\n- Health & Fitness: If part of this is recurring (membership), ensure it’s the best-value plan (downgrade tier, pause, or switch to lower-cost options) and set a monthly cap that fits your overall budget.\n- Misc: Keep it stable; no action needed beyond maintaining the habit of limiting unplanned small purchases.\n\nA simple plan for next week (3 steps)\n1) Categorize today’s Home and Health & Fitness charges into “recurring vs one-time vs discretionary” (10 minutes), and write a short rule for each (e.g., “no Home purchases unless safety/maintenance”).\n2) Set a 7-day freeze on discretionary Home spend and a strict Health & Fitness cap (essentials only) to recover at least $30 across the week and get back to budget.\n3) Do a 2-minute daily check-in: record spending before end of day and, if you’re over the day’s target, choose one specific item to defer the next day to compensate (not a vague “spend less”)."
+  },
+  {
+    "createdAt": "2026-02-07T15:55:09Z",
+    "payload": {
+      "mode": "detailed",
+      "userId": "EuLe21",
+      "time": "m",
+      "total": 3787.64,
+      "budget": 10416.67,
+      "budgetDelta": 6629.030000000001,
+      "topCategories": [
+        {
+          "category": "shopping",
+          "amount": 950.6,
+          "proportion": 0.250974221414918
+        },
+        {
+          "category": "personal_care",
+          "amount": 703.7,
+          "proportion": 0.18578851210780328
+        },
+        {
+          "category": "home",
+          "amount": 546.47,
+          "proportion": 0.14427717523312672
+        },
+        {
+          "category": "kids_pets",
+          "amount": 395.67,
+          "proportion": 0.10446346537685737
+        },
+        {
+          "category": "gas_transport",
+          "amount": 372.4,
+          "proportion": 0.09831979808007096
+        }
+      ]
+    },
+    "advice": "1) One-sentence diagnosis  \nYou’re well under budget this month, but spending is concentrated in discretionary areas—especially Shopping and Personal Care—so tightening those categories now will prevent end-of-month creep while preserving your surplus.\n\n2) Key observations  \n- Total spend is 3,787.64 against a budget of 10,416.67, leaving a large cushion of 6,629.03; you have room, but the current mix suggests discretionary drift risk.  \n- Shopping is the largest category at 950.60 (25.1% of spend), a typical “leak” category where small purchases add up quickly.  \n- Personal Care is high at 703.70 (18.6%), which often includes subscriptions, salons, cosmetics, and convenience services that can be optimized without major lifestyle impact.  \n- Home spending is 546.47 (14.4%); this may be seasonal/maintenance-driven—worth checking for one-off vs. recurring costs.  \n- Kids/Pets (395.67; 10.4%) and Gas/Transport (372.40; 9.8%) are meaningful but more “needs-adjacent”; costs here can usually be reduced via planning rather than pure cutting.  \n\n3) Specific adjustments by category  \n- Shopping (950.60): Put a 7-day cooling-off rule on non-essentials, batch purchases into one planned order per week, and set a hard cap for the rest of the month (e.g., keep weekly shopping to a fixed amount and track it live).  \n- Personal Care (703.70): Identify any subscriptions/auto-refills and pause anything non-essential; cap salons/spa/cosmetics to one planned spend for the remainder of the month and switch routine items to a preset “replenishment list” only.  \n- Home (546.47): Separate “maintenance/repairs” from “improvements/decor”; defer improvements until you confirm end-of-month totals, and get quotes/price comparisons for any upcoming home spend over a set threshold.  \n- Kids/Pets (395.67): Review pet supply frequency and switch to bulk/subscribe-and-save only for true staples; for kids’ extras, set a weekly envelope amount and pre-plan upcoming activities to avoid impulse add-ons.  \n- Gas/Transport (372.40): Combine errands into 1–2 trips, check if any driving is avoidable via delivery/pickup on one consolidated day, and track cost per fill-up to spot any abnormal increases (pricing, driving patterns, vehicle efficiency).  \n\n4) A simple plan for next week (3 steps)  \n1. Categorize the last 2 weeks of transactions into “essential vs. discretionary” within Shopping and Personal Care, and identify the top 5 merchants driving those totals.  \n2. Set two weekly caps for next week: one for Shopping and one for Personal Care, then pre-commit to exactly when you’ll spend (one planned shopping window, one planned personal-care window).  \n3. Do a 10-minute midweek check-in: compare actuals to the two caps, and if you’re over pace, freeze discretionary purchases for 72 hours and re-evaluate at week’s end."
+  },
+  {
+    "createdAt": "2026-02-07T15:55:53Z",
+    "payload": {
+      "mode": "short",
+      "userId": "EuLe21",
+      "time": "w",
+      "total": 1014.56,
+      "budget": 2403.85,
+      "budgetDelta": 1389.29,
+      "topCategories": [
+        {
+          "category": "personal_care",
+          "amount": 405.34,
+          "proportion": 0.3995229459075855
+        },
+        {
+          "category": "home",
+          "amount": 246.21,
+          "proportion": 0.24267662829206751
+        },
+        {
+          "category": "shopping",
+          "amount": 222.48,
+          "proportion": 0.21928717867844189
+        },
+        {
+          "category": "health_fitness",
+          "amount": 125.53,
+          "proportion": 0.12372851285286234
+        },
+        {
+          "category": "misc",
+          "amount": 10,
+          "proportion": 0.009856489512695158
+        }
+      ]
+    },
+    "advice": "You’re well under budget this week (spent 1,014.56 out of 2,403.85), but nearly 40% went to personal care (405.34). Set a hard cap for personal care next week (e.g., 250) and delay any non-urgent purchases until the following week to smooth spending. Put at least half of the 1,389.29 remaining budget toward savings or a priority bill/debt payment now so it doesn’t get absorbed by extra shopping."
+  },
+  {
+    "createdAt": "2026-02-07T16:25:33Z",
+    "payload": {
+      "mode": "short",
+      "userId": "EuLe21",
+      "time": "m",
+      "total": 3787.64,
+      "budget": 10416.67,
+      "budgetDelta": 6629.030000000001,
+      "topCategories": [
+        {
+          "category": "shopping",
+          "amount": 950.6,
+          "proportion": 0.250974221414918
+        },
+        {
+          "category": "personal_care",
+          "amount": 703.7,
+          "proportion": 0.18578851210780328
+        },
+        {
+          "category": "home",
+          "amount": 546.47,
+          "proportion": 0.14427717523312672
+        },
+        {
+          "category": "kids_pets",
+          "amount": 395.67,
+          "proportion": 0.10446346537685737
+        },
+        {
+          "category": "gas_transport",
+          "amount": 372.4,
+          "proportion": 0.09831979808007096
+        }
+      ]
+    },
+    "advice": ""
+  },
+  {
+    "createdAt": "2026-02-07T16:42:57Z",
+    "payload": {
+      "mode": "short",
+      "userId": "EuLe21",
+      "time": "m",
+      "total": 3787.64,
+      "budget": 10416.67,
+      "budgetDelta": 6629.030000000001,
+      "topCategories": [
+        {
+          "category": "shopping",
+          "amount": 950.6,
+          "proportion": 0.250974221414918
+        },
+        {
+          "category": "personal_care",
+          "amount": 703.7,
+          "proportion": 0.18578851210780328
+        },
+        {
+          "category": "home",
+          "amount": 546.47,
+          "proportion": 0.14427717523312672
+        },
+        {
+          "category": "kids_pets",
+          "amount": 395.67,
+          "proportion": 0.10446346537685737
+        },
+        {
+          "category": "gas_transport",
+          "amount": 372.4,
+          "proportion": 0.09831979808007096
+        }
+      ]
+    },
+    "advice": ""
+  },
+  {
+    "createdAt": "2026-02-07T16:43:09Z",
+    "payload": {
+      "mode": "short",
+      "userId": "EuLe21",
+      "time": "m",
+      "total": 3787.64,
+      "budget": 10416.67,
+      "budgetDelta": 6629.030000000001,
+      "topCategories": [
+        {
+          "category": "shopping",
+          "amount": 950.6,
+          "proportion": 0.250974221414918
+        },
+        {
+          "category": "personal_care",
+          "amount": 703.7,
+          "proportion": 0.18578851210780328
+        },
+        {
+          "category": "home",
+          "amount": 546.47,
+          "proportion": 0.14427717523312672
+        },
+        {
+          "category": "kids_pets",
+          "amount": 395.67,
+          "proportion": 0.10446346537685737
+        },
+        {
+          "category": "gas_transport",
+          "amount": 372.4,
+          "proportion": 0.09831979808007096
+        }
+      ]
+    },
+    "advice": "You’re well under budget this month ($3,787.64 spent vs $10,416.67), so use the surplus intentionally instead of letting it drift. Set a firm cap for Shopping and Personal Care next month (e.g., cut each by 15–20%) by adding a 24-hour pause rule for non-essentials and pre-loading only that amount to a separate card/account. Move at least half of the current $6,629 surplus into savings or debt payoff today so it doesn’t get re-spent later in the month."
+  }
+]
